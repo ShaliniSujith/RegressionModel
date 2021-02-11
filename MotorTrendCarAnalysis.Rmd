@@ -1,0 +1,125 @@
+---
+title: "MotorTrendCarAnalysis"
+author: "SHALINI RAVI"
+date: "2/9/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scenario
+
+In this assignment, You work for Motor Trend, a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+
+* “Is an automatic or manual transmission better for MPG”
+* "Quantify the MPG difference between automatic and manual transmissions"  
+
+## Summary
+Approach:
+
+- Data Processing
+- Exploratory Analysis
+- Model Selection 
+- Model Examination 
+- Conclusion
+
+## Data Processing
+**'am' variable ** - Denotes car is manual or automatic transmission
+
+- Change type of 'am' to factor
+- Name the levels as 'manual' or 'automatic'
+- Calculate mean value for 'mpg' for both automatic and manual.
+
+
+
+```{r}
+data("mtcars")
+data <- mtcars
+data$am <- as.factor(data$am)
+levels(data$am)<-c("A","M")
+
+data$cyl <- as.factor(data$cyl)
+data$gear <- as.factor(data$gear)
+data$vs <- as.factor(data$vs)
+levels(data$vs)<- c("V","S")
+
+```
+
+## Exploratory Analysis
+
+**Analyze what all fields the dataset contains.**
+
+```{r}
+str(data)
+head(data)
+```
+
+**Check relation between mpg and am**, Create boxplot.
+
+```{r}
+library(ggplot2)
+g <- ggplot(data, aes(am, mpg))
+g <- g + geom_boxplot(aes(fill = am))
+print(g)
+```
+
+Plot shows that car with **manual** transmission has **higher** mpg.
+But there can be other factor also. So before creating a model we should look at other factors which should have high correlation with the variable.
+
+Let's look at all variables whose coorelation with mpg is higher than the **am** variable.
+
+```{r}
+correlation <- cor(mtcars$mpg, mtcars)
+correlation <- correlation[,order(-abs(correlation[1,]))]
+correlation
+
+variables <- names(correlation)[1: which(names(correlation)=="am")]
+variables
+
+```
+
+## Model Selection 
+As seen mpg variable has stronger coorelation with other variables too apart from 'am'. But we can't base our model only on this variable as it will not be the most accurate one.
+
+Let's try to fit mpg with just am.
+
+```{r}
+first <- lm(mpg ~ am, data)
+summary(first)
+```
+
+Here, p-value is quite low but R-squared value is a real problem.
+Let's now fit all variables with mpg.
+
+```{r}
+last <- lm(mpg ~ ., data)
+summary(last)
+```
+R-squared have improved but p-value become the problem which is caused due to overfitting. 
+
+Lets use **step** method to iterate over variable and obtain best model.
+
+```{r}
+best <- step(last, direction="both", trace=FALSE)
+summary(best)
+```
+
+Here R-squared is good also p-value is significant. SO, it is the best fit.
+
+The best model we obtained 
+here **best** - means dependence of mpg over wt and qsec other tham 'am'. Lets plot and compare residual plots to understand more.
+
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(best)
+```
+
+## Conclusion
+
+1. Whether automatic or manual is better for mpg we can answer using all models as holding all other parameter constant, manual transmission increases the mpg.
+
+2. Based on the 'best' fit model we can conclude that cars with manual transmission have 2.93 more mpg than that of automatic with p < 0.05 and R-squared 0.85.
+
+3. Residuals or Fitted plot shows something is missing from the model which can be due to small sample size. 
